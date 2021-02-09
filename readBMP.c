@@ -5,56 +5,47 @@
 #include <stdbool.h> 
 long size=0;
 int data;
-#define REV(X) ((X << 24) | (( X & 0xff00 ) << 8) | (( X >> 8) & 0xff00 ) | ( X >> 24 ))
+struct BMPFile{
+	uint16_t type;
+	uint32_t size;
+	uint32_t reserved;
+	uint32_t offset;
+	uint32_t infosize;
+	uint32_t width;
+	uint32_t height;
+	uint16_t planes;
+	uint16_t bitcount;
+	uint32_t compression;
+	uint32_t imagesize;
+	uint32_t pixels_x;
+	uint32_t pixels_y;
+	uint32_t used;
+	uint32_t important;
+	
+}__attribute__((packed));
+
+uint32_t bswap32(uint32_t x) {
+    return ((x & 0xFF000000) >> 24) | ((x & 0x00FF0000) >> 8) | ((x & 0x0000FF00) << 8) | (x << 24);
+}
+
 char* readBMP(uint32_t* fb, FILE *imagef)
 {
-	int i,j,data,offset,hbytes,width,height;
-	long size=0,datacut=0,bpp=0;
-	int **image;
-	int temp=0;
-	if(imagef==NULL)
+	int color = 0;
+	struct BMPFile bmp;
+
+	fread(&bmp,sizeof(bmp),1,imagef);
+	printf("ojigiejiijeg %i %i %i",bmp.width,bmp.height,bmp.size);
+	for (int i = 0; i < bmp.height; i++)
 	{
-		printf("Error trying opening file");
-		exit(1);
+		for (int j = 0; j < bmp.width; j++)
+		{
+			fread(&color,1,3,imagef);
+			fb[(i) * 1280 + j] = color;
+		}
+		
 	}
-	else
-	{
-		printf("Processing BMP Header...\n");
-		offset = 0;
-		fseek(imagef,offset,0);
-		for(i=0;i<2;i++)
-		{
-			fread(&data,1,1,imagef);
-			printf("%c",data);
-		}
-		fread(&size,4,1,imagef);
-		offset = 10;
-		fseek(imagef,offset,0);
-		fread(&datacut,4,1,imagef);
-		fread(&hbytes,4,1,imagef);
-		fread(&width,4,1,imagef);
-		fread(&height,4,1,imagef);
-		fseek(imagef,2,1);
-		fread(&bpp,2,1,imagef);
-		fseek(imagef,datacut,0);
-		int **image = (int **)malloc(height*sizeof(int *));
-		for(i=0;i<height;i++)
-		{
-			image[i] = (int *)malloc(width*sizeof(int));
-		}
-		int numbytes = (size - datacut)/3;
-		int r,c;
-		for(r=252;r>0;r--)
-		{
-			for(c=0;c<420;c++)
-			{
-				fread(&temp,1,3,imagef);
-                printf("%x ",temp);
-                fb[(r * 1280 * 2) + c * 2] = REV(temp);
+	
 }
-			}
-		}
-	}
 
 void setpixel(uint32_t* fb, uint32_t x, uint32_t y, uint32_t color){
     for (int j = 0; j < 720; j++)
@@ -65,7 +56,7 @@ int main(){
     ioctl(1,0x01,0x01);
     uint32_t* fb = (uint32_t*) mmap(NULL,ioctl(1,0x07), PROT_READ | PROT_WRITE,0,1,0);
     FILE *fp;
-    fp=fopen("/bin/posterpropaganda.bmp", "r");
+    fp=fopen("/bin/aaa.bmp", "r");
     readBMP(fb,fp);
     fclose(fp);
     return 0;
